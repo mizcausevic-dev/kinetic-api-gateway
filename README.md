@@ -4,8 +4,6 @@
 
 **Recruiter takeaway:** *"This person can build backend services that connect technical implementation to pipeline, platform, and go-to-market outcomes."*
 
-**Links:** [LinkedIn](https://www.linkedin.com/in/mirzacausevic) · [Skills Page](https://mizcausevic.com/) · [GitHub](https://github.com/fknmiz)
-
 ---
 
 ## Project Overview
@@ -245,6 +243,13 @@ See [docs/architecture.md](./docs/architecture.md) for the deeper service walkth
 ![Express](https://img.shields.io/badge/Express-REST_API-000000?logo=express&logoColor=white)
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger_UI-85EA2D?logo=swagger&logoColor=black)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+### Portfolio Links
+
+- [LinkedIn](https://www.linkedin.com/in/mirzacausevic)
+- [Skills Page](https://mizcausevic.com/skills/)
+- [Medium](https://medium.com/@mizcausevic)
+- [GitHub](https://github.com/fknmiz)
 
 ---
 
