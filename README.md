@@ -193,6 +193,30 @@ See [docs/architecture.md](./docs/architecture.md) for the deeper service walkth
 
 ---
 
+## Screenshots
+
+This repo follows the screenshot standard documented in [docs/portfolio-screenshot-standard.md](./docs/portfolio-screenshot-standard.md).
+
+### Swagger UI
+
+![Swagger UI overview](./screenshots/01-hero.png)
+
+### Lead Scoring Workflow
+
+![Lead scoring request and response](./screenshots/02-feature.png)
+
+### Validation Proof
+
+![Automated API validation proof](./screenshots/03-proof.png)
+
+Assets live in [`screenshots/`](./screenshots/). Recommended captures for this repo:
+
+- Swagger UI for `/docs`
+- lead scoring request/response example
+- test run or architecture view
+
+---
+
 ## Key Design Decisions
 
 | Decision | Rationale |
