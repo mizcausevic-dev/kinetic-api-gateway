@@ -1,0 +1,254 @@
+openapi: 3.0.3
+info:
+  title: Kinetic API Gateway
+  version: 1.0.0
+  description: >
+    Recruiter-ready Express API that models SaaS lead routing, account visibility,
+    campaign reporting, and revenue-oriented scoring workflows.
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: Health
+  - name: Leads
+  - name: Accounts
+  - name: Campaigns
+  - name: Scoring
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Service health check
+      responses:
+        '200':
+          description: Service status payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/leads:
+    get:
+      tags: [Leads]
+      summary: List SaaS lead records
+      responses:
+        '200':
+          description: Array of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+  /api/leads/{id}:
+    get:
+      tags: [Leads]
+      summary: Get one lead by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lead record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+        '404':
+          description: Lead not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/accounts:
+    get:
+      tags: [Accounts]
+      summary: List account records
+      responses:
+        '200':
+          description: Array of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+  /api/campaigns:
+    get:
+      tags: [Campaigns]
+      summary: List campaign records
+      responses:
+        '200':
+          description: Array of campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Campaign'
+  /api/score:
+    post:
+      tags: [Scoring]
+      summary: Score a revenue lead using firmographic and engagement signals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreRequest'
+            example:
+              companySize: 850
+              annualRevenue: 128000000
+              engagementScore: 91
+              intentSignals:
+                - pricing-page
+                - webinar-attended
+                - case-study-download
+      responses:
+        '200':
+          description: Scored lead result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScoreResponse'
+        '400':
+          description: Invalid scoring request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: Kinetic API Gateway
+        uptime:
+          type: number
+          example: 120.52
+        timestamp:
+          type: string
+          format: date-time
+      required: [status, service, uptime, timestamp]
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        industry:
+          type: string
+        employees:
+          type: integer
+        annualRevenue:
+          type: integer
+        region:
+          type: string
+        platformPriority:
+          type: string
+      required: [id, name, industry, employees, annualRevenue, region, platformPriority]
+    Lead:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        accountId:
+          type: string
+        company:
+          type: string
+        email:
+          type: string
+        source:
+          type: string
+        region:
+          type: string
+        engagementScore:
+          type: integer
+        intentSignals:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+      required: [id, name, title, accountId, company, email, source, region, engagementScore, intentSignals, status]
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        channel:
+          type: string
+        budget:
+          type: integer
+        leads:
+          type: integer
+        pipelineGenerated:
+          type: integer
+        status:
+          type: string
+      required: [id, name, channel, budget, leads, pipelineGenerated, status]
+    ScoreRequest:
+      type: object
+      properties:
+        companySize:
+          type: integer
+          example: 850
+        annualRevenue:
+          type: integer
+          example: 128000000
+        engagementScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 91
+        intentSignals:
+          type: array
+          items:
+            type: string
+          example:
+            - pricing-page
+            - webinar-attended
+            - case-study-download
+      required: [companySize, annualRevenue, engagementScore, intentSignals]
+    ScoreResponse:
+      type: object
+      properties:
+        score:
+          type: integer
+          example: 94
+        tier:
+          type: string
+          example: high-intent
+        explanation:
+          type: array
+          items:
+            type: string
+        recommendedNextAction:
+          type: string
+          example: Route to sales within 24 hours with enterprise web platform modernization message.
+      required: [score, tier, explanation, recommendedNextAction]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [error]
