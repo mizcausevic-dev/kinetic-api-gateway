@@ -193,6 +193,18 @@ See [docs/architecture.md](./docs/architecture.md) for the deeper service walkth
 
 ---
 
+## Screenshots
+
+Add project visuals in [`screenshots/`](./screenshots/) using the standard documented in [docs/portfolio-screenshot-standard.md](./docs/portfolio-screenshot-standard.md).
+
+Recommended captures for this repo:
+
+- Swagger UI for `/docs`
+- lead scoring request/response example
+- test run or architecture view
+
+---
+
 ## Key Design Decisions
 
 | Decision | Rationale |
