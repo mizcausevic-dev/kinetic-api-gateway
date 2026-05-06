@@ -150,7 +150,7 @@ low:    newsletter-click, homepage-return-visit, ad-click
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/fknmiz/kinetic-api-gateway.git
+git clone https://github.com/mizcausevic-dev/kinetic-api-gateway.git
 cd kinetic-api-gateway
 
 # 2. Install dependencies
@@ -273,8 +273,8 @@ Assets live in [`screenshots/`](./screenshots/). Recommended captures for this r
 - [LinkedIn](https://www.linkedin.com/in/mirzacausevic)
 - [Skills Page](https://mizcausevic.com/skills/)
 - [Medium](https://medium.com/@mizcausevic)
-- [GitHub](https://github.com/fknmiz)
+- [GitHub](https://github.com/mizcausevic-dev)
 
 ---
 
-*Part of [fknmiz's GitHub portfolio](https://github.com/fknmiz) — demonstrating backend architecture, SaaS revenue workflow thinking, and production-aware API delivery.*
+*Part of [mizcausevic-dev's GitHub portfolio](https://github.com/mizcausevic-dev) — demonstrating backend architecture, SaaS revenue workflow thinking, and production-aware API delivery.*
