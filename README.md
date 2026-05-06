@@ -4,6 +4,8 @@
 
 **Recruiter takeaway:** *"This person can build backend services that connect technical implementation to pipeline, platform, and go-to-market outcomes."*
 
+**Links:** [LinkedIn](https://www.linkedin.com/in/mirzacausevic) · [Skills Page](https://mizcausevic.com/) · [GitHub](https://github.com/fknmiz)
+
 ---
 
 ## Project Overview
