@@ -7,9 +7,9 @@ This log is intentionally written as an engineering record rather than a launch 
 ## [1.0.0] - 2026-05-12
 
 ### Released
-- Published \$name\ as a public, portfolio-grade SaaS revenue operations system.
+- Published **kinetic-api-gateway** as a public, portfolio-grade SaaS revenue operations system.
 - Packaged the current implementation, documentation, validation workflow, and proof surfaces into a repo that could be reviewed by engineering, product, and operating stakeholders.
-- Tightened the repo story around the real-world operating problem: billing, usage, forecast, and conversion systems were often stitched together after the fact instead of designed as a coherent operating layer.
+- Tightened the repo story around the real-world operating problem: billing ambiguity, attribution lag, usage-metering gaps, and forecast drift.
 
 ### Why this mattered
 - Existing approaches in CRM reporting, billing tools, product analytics, and spreadsheet forecasting were useful, but they answered isolated questions, but not the full operational story from acquisition through monetization and retention.
@@ -18,7 +18,7 @@ This log is intentionally written as an engineering record rather than a launch 
 ## [0.1.0] - 2026-03-20
 
 ### Shipped
-- Cut the first coherent internal version of the product shape behind \$name\.
+- Cut the first coherent internal version of the product shape behind **kinetic-api-gateway**.
 - Standardized the core objects, decision surfaces, and operator outputs around the repo's main working problem.
 - Established the first reviewable version of the architecture described as: Node.js + Express REST API for B2B SaaS lead scoring, campaign visibility, and revenue workflow automation
 
@@ -55,12 +55,12 @@ This log is intentionally written as an engineering record rather than a launch 
 ## [Idea Origin] - 2023-03-12
 
 ### Observed
-- The initial idea surfaced while looking at how teams were handling billing, usage, forecast, and conversion systems were often stitched together after the fact instead of designed as a coherent operating layer.
+- The initial idea surfaced while looking at how teams were handling billing ambiguity, attribution lag, usage-metering gaps, and forecast drift.
 - The recurring pattern was that people could often see fragments of the problem, but not the whole operational story in one place.
 
 ### Insight
 - The missing product was not another point solution. It was a clearer operating layer that made the work legible to RevOps, product-ops, and growth systems teams.
-- That insight became the basis for \$name\.
+- That insight became the basis for **kinetic-api-gateway**.
 
 ## [Background Signals] - 2022-08-09
 
