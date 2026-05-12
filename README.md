@@ -1,10 +1,10 @@
 # Kinetic API Gateway
 
-> **Node.js + Express portfolio project** demonstrating practical REST API design, B2B SaaS lead scoring, campaign visibility, and production-minded backend structure for revenue operations workflows.
+Node.js and Express backend for **lead scoring**, campaign visibility, and revenue workflow automation in B2B SaaS environments.
 
-**Recruiter takeaway:** *"This person can build backend services that connect technical implementation to pipeline, platform, and go-to-market outcomes."*
-
----
+> **What this repo proves**
+>
+> Revenue operations gets much more reliable when workflow logic is centralized in a clean API contract instead of scattered across brittle automations.
 
 ## Project Overview
 
@@ -14,23 +14,23 @@
 | **Framework** | Express |
 | **API Style** | REST + OpenAPI / Swagger UI |
 | **Domain** | B2B SaaS Revenue Operations |
-| **Sample Data** | 3 accounts · 5 leads · 4 campaigns |
-| **Scoring Inputs** | Company size · Revenue · Engagement · Intent signals |
-| **Operational Focus** | Lead routing · Funnel prioritization · Campaign reporting |
+| **Sample Data** | 3 accounts Â· 5 leads Â· 4 campaigns |
+| **Scoring Inputs** | Company size Â· Revenue Â· Engagement Â· Intent signals |
+| **Operational Focus** | Lead routing Â· Funnel prioritization Â· Campaign reporting |
 
 ---
 
 ## Service Architecture
 
 ```text
-accounts ───────────────────────────────┐
-                                        │
-                                        │ account context
-                                        ▼
-leads ─────────────── campaigns ─────> score engine
-  │                     │                  │
-  │ contact + intent    │ source data      │ scoring model
-  ▼                     ▼                  ▼
+accounts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                                        â”‚
+                                        â”‚ account context
+                                        â–¼
+leads â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ campaigns â”€â”€â”€â”€â”€> score engine
+  â”‚                     â”‚                  â”‚
+  â”‚ contact + intent    â”‚ source data      â”‚ scoring model
+  â–¼                     â–¼                  â–¼
 sales follow-up     pipeline context   next-best action
 ```
 
@@ -177,15 +177,15 @@ npm test
 
 ```text
 client request
-   ↓
+   â†“
 helmet / cors / morgan / JSON parsing
-   ↓
+   â†“
 route handler
-   ↓
+   â†“
 sample data lookup or scoring utility
-   ↓
+   â†“
 JSON response
-   ↓
+   â†“
 centralized error handler for 4xx / 5xx cases
 ```
 
@@ -277,4 +277,4 @@ Assets live in [`screenshots/`](./screenshots/). Recommended captures for this r
 
 ---
 
-*Part of [mizcausevic-dev's GitHub portfolio](https://github.com/mizcausevic-dev) — demonstrating backend architecture, SaaS revenue workflow thinking, and production-aware API delivery.*
+*Part of [mizcausevic-dev's GitHub portfolio](https://github.com/mizcausevic-dev) â€” demonstrating backend architecture, SaaS revenue workflow thinking, and production-aware API delivery.*
