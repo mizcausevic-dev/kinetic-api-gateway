@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test --test-isolation=none tests/api.test.js"
+    "test": "node --test tests/api.test.js"
   },
   "keywords": [
     "express",
