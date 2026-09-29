@@ -1,9 +1,16 @@
 const { after, before, test } = require("node:test");
 const assert = require("node:assert/strict");
-const request = require("supertest");
+const { Agent } = require("node:http");
+const supertest = require("supertest");
 const app = require("../src/app");
 const { errorHandler } = require("../src/middleware/errorHandler");
 
+// Superagent's per-request connection-close path resets intermittently on Windows.
+const agent = new Agent({ keepAlive: true });
+const request = (server) => ({
+  get: (url) => supertest(server).get(url).agent(agent),
+  post: (url) => supertest(server).post(url).agent(agent)
+});
 let server;
 
 before(async () => {
@@ -12,6 +19,7 @@ before(async () => {
 });
 
 after(async () => {
+  agent.destroy();
   await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 });
 
@@ -63,6 +71,26 @@ test("GET /api/leads/:id returns a clear 404 for an unknown lead", async () => {
 
   assert.equal(response.status, 404);
   assert.equal(response.body.error.code, "not_found");
+});
+
+test("unknown lead email canary is absent from response and structured request log", async () => {
+  const records = [];
+  const isolated = app.createApp({ gateway: null, logger: (record) => records.push(record) });
+  const listener = isolated.listen(0, "127.0.0.1");
+  await new Promise((resolve) => listener.once("listening", resolve));
+  try {
+    const response = await request(listener).get("/api/leads/person%40example.test");
+    assert.equal(response.status, 404);
+    assert.equal(response.body.error.code, "not_found");
+    assert.equal(records.length, 1);
+    const evidence = JSON.stringify(response.body) + JSON.stringify(records);
+    for (const canary of ["person@example.test", "person%40example.test"]) {
+      assert.equal(evidence.includes(canary), false, canary);
+    }
+    assert.equal(records[0].route, "/:id");
+  } finally {
+    await new Promise((resolve, reject) => listener.close((error) => (error ? reject(error) : resolve())));
+  }
 });
 
 test("GET /api/campaigns returns the synthetic campaign list", async () => {

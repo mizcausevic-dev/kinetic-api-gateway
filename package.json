@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test tests/api.test.js"
+    "test": "node --test",
+    "render:diagrams": "node scripts/render-diagrams.js",
+    "capture:evidence": "node scripts/capture-evidence.js"
   },
   "keywords": [
     "express",
@@ -22,16 +24,19 @@
   "engines": {
     "node": ">=20"
   },
+  "puppeteer": {
+    "skipDownload": true
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "js-yaml": "^4.1.0",
-    "morgan": "^1.10.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "11.17.0",
     "supertest": "^7.1.4"
   }
 }

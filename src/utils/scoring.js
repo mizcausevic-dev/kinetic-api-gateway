@@ -170,6 +170,10 @@ function scoreLeadPayload({ companySize, annualRevenue, engagementScore, intentS
 
 module.exports = {
   SIGNAL_WEIGHTS,
+  getCompanySizeScore,
+  getRevenueScore,
+  getEngagementScore,
+  getIntentSignalScore,
   getTier,
   scoreLeadPayload
 };

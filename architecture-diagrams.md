@@ -1,47 +1,56 @@
 # Kinetic API Gateway: architecture diagrams
 
-Source of truth: `src/`. In-memory, no auth, no DB. GitHub renders the Mermaid blocks below natively.
+These diagrams describe the source in `src/`. `request-flow.png` and `scoring.png` are generated from the Mermaid blocks below with `npm run render:diagrams` using the pinned Mermaid CLI and a local Chrome or Edge browser.
 
-`request-flow.png` and `scoring.png` are snapshots from before the scoring validation fix. The Mermaid diagrams below describe the current source.
+The public API uses fictional fixtures. The protected gateway is disabled by default and has only a versioned HTTP reference contract. Neither diagram represents a verified CRM integration or production data lifecycle.
 
-## Request flow
+## Request flow and trust boundaries
 
 ```mermaid
 flowchart TD
-  client([HTTP client]) --> server["src/server.js<br/>app.listen(PORT || 3000)"]
-  server --> app["src/app.js<br/>dotenv + openapi.yaml parsed at boot"]
-  subgraph mw["Global middleware, registration order"]
-    direction LR
-    helmet["helmet()"] --> cors["cors() origin *"] --> morgan["morgan('dev')"] --> json["express.json()"]
-  end
-  app --> helmet
-  json --> docs["/docs<br/>swagger-ui-express"]
-  json --> health["GET /health<br/>routes/health.js"]
-  json --> leads["GET /api/leads, /api/leads/:id<br/>routes/leads.js"]
-  json --> accounts["GET /api/accounts<br/>routes/accounts.js"]
-  json --> campaigns["GET /api/campaigns<br/>routes/campaigns.js"]
-  json --> score["POST /api/score<br/>routes/score.js"]
-  json --> nf["catch-all 404"]
-  docs --> spec[("docs/openapi.yaml")]
-  health --> locals["app.locals.serviceName<br/>process.uptime()"]
-  leads & accounts & campaigns --> data[("src/data.js<br/>3 accounts, 5 leads, 4 campaigns")]
-  score --> scoring["src/utils/scoring.js<br/>pure, no I/O"]
-  err["src/middleware/errorHandler.js<br/>{ error: { code, message } }"]
-  leads -- "id miss: 404" --> err
-  score -- "invalid or missing body: 400" --> err
-  nf --> err
+  client([HTTP client]) --> app["src/app.js<br/>helmet, safe request ID and route log,<br/>16 KB JSON limit"]
+  app --> docs["GET /docs and /health"]
+  app --> api["Public /api<br/>synthetic fixtures only"]
+  app --> configured{"GATEWAY_ENABLED=1<br/>with complete configuration?"}
+  configured -- no --> disabled["/gateway/v1 returns 503<br/>gateway_disabled"]
+  configured -- yes --> gateway["Protected /gateway/v1<br/>src/gateway/router.js"]
+  api --> lists["GET leads, accounts, campaigns<br/>src/data.js"]
+  api --> calculator["POST /api/score<br/>validated caller inputs"]
+  api --> linked["GET /api/leads/:id/score<br/>lead.accountId joins fixture account"]
+  lists --> fixture[("Synthetic records<br/>src/data.js")]
+  linked --> fixture
+  linked --> rules["rules-v1 scoring and breakdown<br/>src/utils/linkedScore.js"]
+  calculator --> rulesCore["src/utils/scoring.js<br/>pure scoring rules"]
+  rules --> rulesCore
+  gateway --> auth["Server-configured client token hash<br/>tenant and scopes from config"]
+  auth --> limit["Per client and tenant<br/>in-memory rate limit"]
+  limit --> protected["Score, delivery, status,<br/>and optional deletion routes"]
+  protected --> source["Configured source adapter<br/>gateway-owned credential"]
+  protected --> delivery["Configured delivery adapter<br/>signed minimal event"]
+  protected --> store[("Process-local status,<br/>idempotency, suppression")]
 ```
 
-## POST /api/score internals
+## Linked scoring and protected delivery
 
 ```mermaid
 flowchart TD
-  body["POST /api/score body"] --> valid{"non-negative integer size/revenue,<br/>engagement 0-100, known signals?"}
-  valid -- "no" --> e400["400 via next(err)"]
-  valid -- "yes" --> sp["scoreLeadPayload()"]
-  sp --> s1["getCompanySizeScore, max 23"] & s2["getRevenueScore, max 20"] & s3["getEngagementScore, max 36"] & s4["getIntentSignalScore, max 21<br/>dedupe + weights"]
-  s1 & s2 & s3 & s4 --> clamp["clamp(sum, 0, 100)"]
-  clamp --> tier{"getTier"}
-  tier --> t["cold under 40, warm 40+,<br/>qualified 70+, high-intent 85+"]
-  t --> out["{ score, tier, explanation[max 4], recommendedNextAction }"]
+  demo["Public synthetic example<br/>GET /api/leads/lead-001/score"] --> join["lead-001.accountId<br/>acct-analytics-002"]
+  join --> fixtureInputs["Account: 620 employees, 94M revenue<br/>Lead: engagement 88, three signals"]
+  fixtureInputs --> formula["rules-v1: 23 + 16 + 32 + 18"]
+  formula --> demoResult["89 / high-intent<br/>IDs, inputs, breakdown, no contact details"]
+  protected["Protected /gateway/v1<br/>valid client token and route scope"] --> tenant["Tenant from server configuration<br/>never from request header"]
+  tenant --> read["Source adapter reads lead by tenant and ID<br/>bounded response, timeout, limited GET retry"]
+  read --> gate{"Matching tenant,<br/>current scoring consent,<br/>not deleted?"}
+  gate -- no --> deny["403, 404, or 410<br/>no score or delivery"]
+  gate -- yes --> account["Source adapter reads linked account<br/>and checks tenant"]
+  account --> score["Derive inputs and rules-v1 score<br/>no contact name or email"]
+  score --> scoreResponse["GET /leads/:id/score<br/>returns traceable score"]
+  score --> reserve["POST /deliveries<br/>reserve idempotency key"]
+  reserve --> send["Sign minimal event and send<br/>at most three attempts"]
+  send --> ack{"Destination accepts<br/>HTTP 2xx?"}
+  ack -- yes --> delivered["201 delivered<br/>GET /deliveries/:id: delivered"]
+  ack -- no --> failed["502 delivery_failed<br/>GET /deliveries/:id: failed"]
+  tenant --> deletion["DELETE /leads/:id<br/>requires scope and delete enabled"]
+  deletion --> suppress["Suppress local reads and deliveries<br/>remove process-local status"]
+  suppress --> upstreamDelete["Request source-owned deletion<br/>no automatic destination erasure"]
 ```
