@@ -1,7 +1,8 @@
 {
   "name": "kinetic-api-gateway",
   "version": "1.0.0",
-  "description": "Recruiter-ready Express API for SaaS lead routing, campaign visibility, and revenue-oriented scoring.",
+  "private": true,
+  "description": "Synthetic Express API for explainable SaaS lead scoring and sample account and campaign data.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

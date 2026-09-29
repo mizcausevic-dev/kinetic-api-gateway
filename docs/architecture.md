@@ -40,19 +40,19 @@ The final score is capped at 100 and mapped to four operating tiers:
 - `70-84`: qualified
 - `85-100`: high-intent
 
-This approach is useful when teams need a transparent routing model they can explain to sales, marketing, RevOps, and leadership without requiring a machine learning pipeline.
+This approach is useful when teams need a transparent prioritization model they can explain to sales, marketing, RevOps, and leadership without requiring a machine learning pipeline.
 
 ## Security Notes
 
 - `helmet` sets baseline HTTP security headers
-- `cors` keeps cross-origin behavior explicit and easy to harden later
-- `express.json()` ensures the API can safely accept structured payloads
-- centralized error handling avoids leaking stack traces in response bodies
+- `cors()` currently allows any origin because only synthetic fixtures are served
+- `express.json()` parses JSON; the scoring route validates its fields and allowed signals
+- centralized error handling returns generic 5xx messages and does not echo malformed JSON
 - Swagger UI is generated from a static spec, which keeps API documentation deterministic
 
 ## Future Production Upgrades
 
-- add request schema validation with a library such as `zod` or `joi`
+- centralize request schemas if the API grows beyond the current hand-validated scoring payload
 - move in-memory data to PostgreSQL and introduce repository or service abstractions
 - add rate limiting, authn/authz, and audit trails for internal or partner integrations
 - emit structured logs and metrics to an observability platform

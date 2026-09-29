@@ -66,7 +66,7 @@ function getEngagementScore(engagementScore) {
 
 function getIntentSignalScore(intentSignals) {
   const rawScore = normalizeIntentSignals(intentSignals).reduce((total, signal) => {
-    return total + (SIGNAL_WEIGHTS[signal] || 0);
+    return total + (Object.hasOwn(SIGNAL_WEIGHTS, signal) ? SIGNAL_WEIGHTS[signal] : 0);
   }, 0);
 
   return clamp(rawScore, 0, 21);
@@ -129,7 +129,7 @@ function buildExplanation({ companySize, annualRevenue, engagementScore, intentS
 
 function getRecommendedNextAction(tier) {
   if (tier === "high-intent") {
-    return "Route to sales within 24 hours with enterprise web platform modernization message.";
+    return "Route to sales within 24 hours with an account-specific outreach plan.";
   }
 
   if (tier === "qualified") {

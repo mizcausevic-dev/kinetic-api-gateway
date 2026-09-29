@@ -1,10 +1,12 @@
 # Kinetic API Gateway
 
-Node.js and Express backend for **lead scoring**, campaign visibility, and revenue workflow automation in B2B SaaS environments.
+Synthetic B2B SaaS portfolio API for **explainable lead scoring** and sample account, lead, and campaign data.
+
+This is a demonstration service. It does not route leads, call a CRM, or persist records. The bundled fixture names, email addresses, and campaign metrics are fictional. Do not submit real customer data to a public instance.
 
 > **What this repo proves**
 >
-> Revenue operations gets much more reliable when workflow logic is centralized in a clean API contract instead of scattered across brittle automations.
+> A small, documented API can make scoring rules inspectable before a team connects real systems.
 
 ## Project Overview
 
@@ -16,23 +18,18 @@ Node.js and Express backend for **lead scoring**, campaign visibility, and reven
 | **Domain** | B2B SaaS Revenue Operations |
 | **Sample Data** | 3 accounts Â· 5 leads Â· 4 campaigns |
 | **Scoring Inputs** | Company size Â· Revenue Â· Engagement Â· Intent signals |
-| **Operational Focus** | Lead routing Â· Funnel prioritization Â· Campaign reporting |
+| **Operational Focus** | Scoring recommendations and synthetic resource listings |
 
 ---
 
 ## Service Architecture
 
 ```text
-accounts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                                        â”‚
-                                        â”‚ account context
-                                        â–¼
-leads â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ campaigns â”€â”€â”€â”€â”€> score engine
-  â”‚                     â”‚                  â”‚
-  â”‚ contact + intent    â”‚ source data      â”‚ scoring model
-  â–¼                     â–¼                  â–¼
-sales follow-up     pipeline context   next-best action
+GET /api/leads, /api/accounts, /api/campaigns -> synthetic fixtures
+POST /api/score -> validates caller-supplied fields -> score and recommendation text
 ```
+
+The read endpoints and scoring endpoint are independent. See [architecture diagrams](./architecture-diagrams.md) for the detailed request flow.
 
 ### Core Components
 
@@ -55,7 +52,7 @@ sales follow-up     pipeline context   next-best action
 | `GET` | `/api/leads` | Returns B2B SaaS lead records |
 | `GET` | `/api/leads/:id` | Returns one lead or a clean 404 response |
 | `GET` | `/api/accounts` | Returns company / account records |
-| `GET` | `/api/campaigns` | Returns revenue campaign performance records |
+| `GET` | `/api/campaigns` | Returns fictional campaign metrics |
 | `POST` | `/api/score` | Scores a lead based on fit and buying intent |
 | `GET` | `/docs` | Serves Swagger UI from the OpenAPI spec |
 
@@ -67,13 +64,13 @@ Revenue teams often have engagement data in marketing systems, firmographic cont
 
 ## Solution
 
-Kinetic API Gateway models a compact internal service that:
+Kinetic API Gateway demonstrates a compact API that:
 
-- exposes leads, accounts, and campaign data through a clean REST surface
+- exposes synthetic leads, accounts, and campaign data through a REST surface
 - scores inbound opportunities with transparent, explainable rules
 - translates buying signals into next-step sales recommendations
 - documents the contract with OpenAPI for easier onboarding and integration
-- includes the middleware, tests, and documentation expected in a production-minded backend project
+- includes middleware, tests, and documentation as a foundation for further hardening
 
 ---
 
@@ -131,9 +128,10 @@ low:    newsletter-click, homepage-return-visit, ad-click
   "explanation": [
     "High engagement score indicates strong buying interest.",
     "Pricing page visit is a strong commercial intent signal.",
-    "Company size fits enterprise target profile."
+    "Company size fits enterprise target profile.",
+    "Revenue profile suggests budget capacity for platform investment."
   ],
-  "recommendedNextAction": "Route to sales within 24 hours with enterprise web platform modernization message."
+  "recommendedNextAction": "Route to sales within 24 hours with an account-specific outreach plan."
 }
 ```
 
@@ -154,7 +152,7 @@ git clone https://github.com/mizcausevic-dev/kinetic-api-gateway.git
 cd kinetic-api-gateway
 
 # 2. Install dependencies
-npm install
+npm ci
 
 # 3. Create local environment file
 cp .env.example .env
@@ -164,6 +162,14 @@ npm start
 ```
 
 Swagger UI is available at `http://localhost:3000/docs`.
+
+In a second PowerShell terminal, check the service and submit the example score request:
+
+```powershell
+curl.exe http://localhost:3000/health
+$body = '{"companySize":850,"annualRevenue":128000000,"engagementScore":91,"intentSignals":["pricing-page","webinar-attended","case-study-download"]}'
+Invoke-RestMethod -Uri http://localhost:3000/api/score -Method Post -ContentType 'application/json' -Body $body
+```
 
 ### Run Tests
 
@@ -175,21 +181,7 @@ npm test
 
 ## Request Flow
 
-```text
-client request
-   â†“
-helmet / cors / morgan / JSON parsing
-   â†“
-route handler
-   â†“
-sample data lookup or scoring utility
-   â†“
-JSON response
-   â†“
-centralized error handler for 4xx / 5xx cases
-```
-
-See [docs/architecture.md](./docs/architecture.md) for the deeper service walkthrough.
+Requests pass through security headers, open CORS for the synthetic demo, request logging, and JSON parsing before reaching the route. See [docs/architecture.md](./docs/architecture.md) and the [architecture diagrams](./architecture-diagrams.md) for details.
 
 ---
 
@@ -205,9 +197,13 @@ This repo follows the screenshot standard documented in [docs/portfolio-screensh
 
 ![Lead scoring request and response](./screenshots/02-feature.png)
 
-### Validation Proof
+This capture shows an earlier recommendation string; the JSON example above reflects the current response.
 
-![Automated API validation proof](./screenshots/03-proof.png)
+### Test illustration
+
+![Illustration of API validation](./screenshots/03-proof.png)
+
+The image is illustrative and includes an older test command. Run `npm test` or inspect the current GitHub Actions run for reproducible evidence.
 
 Assets live in [`screenshots/`](./screenshots/). Recommended captures for this repo:
 
@@ -236,7 +232,7 @@ Assets live in [`screenshots/`](./screenshots/). Recommended captures for this r
 | --- | --- |
 | **Backend engineering** | Express app structure, middleware, routing, and error handling |
 | **API design** | Clean REST endpoints with documented request/response behavior |
-| **Business systems thinking** | Lead scoring tied to campaigns, account fit, and next-step revenue action |
+| **Business systems thinking** | Explainable scoring inputs and next-step recommendation text |
 | **Platform maturity** | OpenAPI docs, tests, environment config, and security middleware |
 | **Revenue orientation** | SaaS sample data and scoring logic framed around pipeline prioritization |
 
@@ -249,12 +245,14 @@ Assets live in [`screenshots/`](./screenshots/). Recommended captures for this r
 - Automated tests cover key endpoints and scoring behavior
 - GitHub Actions CI, CodeQL, Dependabot, and a repository security policy are included in the repo
 
+The API has no authentication or tenant boundaries. Keep it on synthetic data until those controls and a privacy lifecycle are implemented and verified.
+
 ---
 
 ## Future Enhancements
 
 - persist leads, accounts, and campaigns in PostgreSQL
-- add request validation and rate limiting
+- add rate limiting and structured request limits
 - add authentication, authorization, and audit logging
 - publish scoring events to CRM or marketing automation workflows
 - introduce analytics ingestion webhooks and structured observability

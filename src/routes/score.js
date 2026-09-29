@@ -1,24 +1,29 @@
 const express = require("express");
-const { scoreLeadPayload } = require("../utils/scoring");
+const { SIGNAL_WEIGHTS, scoreLeadPayload } = require("../utils/scoring");
 
 const router = express.Router();
 
-function isValidNumber(value) {
-  return typeof value === "number" && Number.isFinite(value);
+function isNonNegativeInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
 }
 
 router.post("/", (req, res, next) => {
-  const { companySize, annualRevenue, engagementScore, intentSignals } = req.body;
+  const { companySize, annualRevenue, engagementScore, intentSignals } = req.body ?? {};
 
   if (
-    !isValidNumber(companySize) ||
-    !isValidNumber(annualRevenue) ||
-    !isValidNumber(engagementScore) ||
+    !isNonNegativeInteger(companySize) ||
+    !isNonNegativeInteger(annualRevenue) ||
+    !Number.isInteger(engagementScore) ||
+    engagementScore < 0 ||
+    engagementScore > 100 ||
     !Array.isArray(intentSignals) ||
-    intentSignals.some((signal) => typeof signal !== "string")
+    intentSignals.length > 20 ||
+    intentSignals.some(
+      (signal) => typeof signal !== "string" || !Object.hasOwn(SIGNAL_WEIGHTS, signal)
+    )
   ) {
     const error = new Error(
-      "Request body must include numeric companySize, annualRevenue, engagementScore, and an array of string intentSignals."
+      "Request body must include non-negative integer companySize and annualRevenue, an integer engagementScore from 0 to 100, and up to 20 recognized intentSignals."
     );
     error.statusCode = 400;
     return next(error);

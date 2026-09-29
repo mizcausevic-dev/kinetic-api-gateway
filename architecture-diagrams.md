@@ -1,6 +1,8 @@
 # Kinetic API Gateway: architecture diagrams
 
-Source of truth: `src/` at commit `43006ce`. In-memory, no auth, no DB. GitHub renders the Mermaid blocks below natively.
+Source of truth: `src/`. In-memory, no auth, no DB. GitHub renders the Mermaid blocks below natively.
+
+`request-flow.png` and `scoring.png` are snapshots from before the scoring validation fix. The Mermaid diagrams below describe the current source.
 
 ## Request flow
 
@@ -26,20 +28,15 @@ flowchart TD
   score --> scoring["src/utils/scoring.js<br/>pure, no I/O"]
   err["src/middleware/errorHandler.js<br/>{ error: { code, message } }"]
   leads -- "id miss: 404" --> err
-  score -- "invalid body: 400" --> err
+  score -- "invalid or missing body: 400" --> err
   nf --> err
-  score -. "no JSON body: TypeError 500 (bug)" .-> err
-  classDef bug stroke:#A32D2D,stroke-width:2px,color:#A32D2D
-  class score bug
 ```
 
 ## POST /api/score internals
 
 ```mermaid
 flowchart TD
-  body["POST /api/score body"] --> guard{"req.body present?<br/>(implicit, unchecked)"}
-  guard -- "no" --> e500["TypeError, 500<br/>fix: req.body ?? {}"]
-  guard -- "yes" --> valid{"3 finite numbers and<br/>string[] intentSignals?"}
+  body["POST /api/score body"] --> valid{"non-negative integer size/revenue,<br/>engagement 0-100, known signals?"}
   valid -- "no" --> e400["400 via next(err)"]
   valid -- "yes" --> sp["scoreLeadPayload()"]
   sp --> s1["getCompanySizeScore, max 23"] & s2["getRevenueScore, max 20"] & s3["getEngagementScore, max 36"] & s4["getIntentSignalScore, max 21<br/>dedupe + weights"]
@@ -47,8 +44,4 @@ flowchart TD
   clamp --> tier{"getTier"}
   tier --> t["cold under 40, warm 40+,<br/>qualified 70+, high-intent 85+"]
   t --> out["{ score, tier, explanation[max 4], recommendedNextAction }"]
-  classDef bug stroke:#A32D2D,stroke-width:2px,color:#A32D2D
-  class e500 bug
 ```
-
-Red nodes mark the bodyless-request bug: `POST /api/score` without a JSON body returns 500 instead of 400. Remove the red edge and node once `score.js` uses `req.body ?? {}`.

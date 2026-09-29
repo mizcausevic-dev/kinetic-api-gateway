@@ -3,8 +3,8 @@ info:
   title: Kinetic API Gateway
   version: 1.0.0
   description: >
-    Recruiter-ready Express API that models SaaS lead routing, account visibility,
-    campaign reporting, and revenue-oriented scoring workflows.
+    Synthetic portfolio API for account, lead, and campaign fixtures plus
+    explainable revenue-oriented scoring. It does not route leads or sync external systems.
 servers:
   - url: http://localhost:3000
 tags:
@@ -205,9 +205,11 @@ components:
       properties:
         companySize:
           type: integer
+          minimum: 0
           example: 850
         annualRevenue:
           type: integer
+          minimum: 0
           example: 128000000
         engagementScore:
           type: integer
@@ -216,8 +218,10 @@ components:
           example: 91
         intentSignals:
           type: array
+          maxItems: 20
           items:
             type: string
+            enum: [pricing-page, demo-request, webinar-attended, case-study-download, newsletter-click, homepage-return-visit, ad-click]
           example:
             - pricing-page
             - webinar-attended
@@ -238,7 +242,7 @@ components:
             type: string
         recommendedNextAction:
           type: string
-          example: Route to sales within 24 hours with enterprise web platform modernization message.
+          example: Route to sales within 24 hours with an account-specific outreach plan.
       required: [score, tier, explanation, recommendedNextAction]
     ErrorResponse:
       type: object
