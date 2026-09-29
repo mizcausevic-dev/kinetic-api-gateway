@@ -160,5 +160,5 @@ Every repo should aim for:
 For this project, the ideal screenshots are:
 
 1. Swagger UI at `/docs`
-2. Example `POST /api/score` request/response
-3. Test run or architecture diagram
+2. Synthetic lead-to-account workflow with `GET /api/leads/lead-001/score`
+3. Captured local test output, labeled as local evidence

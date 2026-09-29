@@ -3,16 +3,23 @@ info:
   title: Kinetic API Gateway
   version: 1.0.0
   description: >
-    Recruiter-ready Express API that models SaaS lead routing, account visibility,
-    campaign reporting, and revenue-oriented scoring workflows.
+    Public synthetic fixtures and an unauthenticated calculator, plus a separately
+    configured protected gateway reference. The gateway is disabled by default,
+    tested with local HTTP mocks, and has no verified live CRM connection.
 servers:
   - url: http://localhost:3000
 tags:
   - name: Health
   - name: Leads
+    description: Public synthetic fixture reads.
   - name: Accounts
+    description: Public synthetic fixture reads.
   - name: Campaigns
+    description: Public fictional campaign metrics.
   - name: Scoring
+    description: Public synthetic linked score and unauthenticated stateless calculator; do not submit real data.
+  - name: Protected Gateway
+    description: Disabled by default. Authenticated reference integration for local mock tests; no live provider verified.
 paths:
   /health:
     get:
@@ -28,7 +35,7 @@ paths:
   /api/leads:
     get:
       tags: [Leads]
-      summary: List SaaS lead records
+      summary: List synthetic SaaS lead fixtures
       responses:
         '200':
           description: Array of leads
@@ -41,7 +48,7 @@ paths:
   /api/leads/{id}:
     get:
       tags: [Leads]
-      summary: Get one lead by ID
+      summary: Get one synthetic lead fixture by ID
       parameters:
         - in: path
           name: id
@@ -61,10 +68,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/leads/{id}/score:
+    get:
+      tags: [Leads, Scoring]
+      summary: Score a synthetic lead using its linked synthetic account
+      description: >
+        Read-only fixture lookup. Account employees and annualRevenue provide firmographics;
+        lead engagementScore and intentSignals provide behavior. No contact details are returned.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: lead-001
+      responses:
+        '200':
+          description: Traceable lead-to-account score using synthetic fixtures
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkedScoreResponse'
+              example:
+                leadId: lead-001
+                accountId: acct-analytics-002
+                modelVersion: rules-v1
+                provenance:
+                  dataSource: synthetic-fixture
+                  leadId: lead-001
+                  accountId: acct-analytics-002
+                inputs:
+                  companySize: 620
+                  annualRevenue: 94000000
+                  engagementScore: 88
+                  intentSignals: [pricing-page, webinar-attended, case-study-download]
+                breakdown:
+                  companySize: 23
+                  annualRevenue: 16
+                  engagement: 32
+                  intentSignals: 18
+                result:
+                  score: 89
+                  tier: high-intent
+                  explanation:
+                    - High engagement score indicates strong buying interest.
+                    - Pricing page visit is a strong commercial intent signal.
+                    - Company size fits enterprise target profile.
+                    - Webinar attendance shows sustained interest beyond a single visit.
+                  recommendedNextAction: Route to sales within 24 hours with an account-specific outreach plan.
+        '404':
+          description: Lead or linked account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/accounts:
     get:
       tags: [Accounts]
-      summary: List account records
+      summary: List synthetic account fixtures
       responses:
         '200':
           description: Array of accounts
@@ -77,7 +138,7 @@ paths:
   /api/campaigns:
     get:
       tags: [Campaigns]
-      summary: List campaign records
+      summary: List fictional campaign metrics
       responses:
         '200':
           description: Array of campaigns
@@ -90,7 +151,8 @@ paths:
   /api/score:
     post:
       tags: [Scoring]
-      summary: Score a revenue lead using firmographic and engagement signals
+      summary: Score caller-supplied synthetic inputs without authentication
+      description: Public stateless calculator. Do not submit real lead or account data.
       requestBody:
         required: true
         content:
@@ -118,7 +180,343 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /gateway/v1/leads/{id}/score:
+    get:
+      tags: [Protected Gateway]
+      summary: Score one authorized lead from the configured source
+      description: >
+        Requires scores:read. Reads a lead and its linked account within the authenticated
+        client's tenant, checks current sales-prioritization consent and deletion state,
+        then scores in memory. This is a reference contract, not a verified live CRM integration.
+      security:
+        - GatewayBearer: []
+      parameters:
+        - $ref: '#/components/parameters/GatewayLeadId'
+      responses:
+        '200':
+          description: Explainable score with source and consent provenance; no contact name or email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayScoreResponse'
+              example:
+                leadId: lead-001
+                accountId: acct-001
+                modelVersion: rules-v1
+                provenance:
+                  dataSource: configured-http-source
+                  tenantId: tenant-a
+                  consentRecordedAt: '2026-01-01T00:00:00.000Z'
+                inputs:
+                  companySize: 620
+                  annualRevenue: 94000000
+                  engagementScore: 88
+                  intentSignals: [pricing-page, webinar-attended, case-study-download]
+                breakdown:
+                  companySize: 23
+                  annualRevenue: 16
+                  engagement: 32
+                  intentSignals: 18
+                result:
+                  score: 89
+                  tier: high-intent
+                  explanation:
+                    - High engagement score indicates strong buying interest.
+                    - Pricing page visit is a strong commercial intent signal.
+                    - Company size fits enterprise target profile.
+                    - Webinar attendance shows sustained interest beyond a single visit.
+                  recommendedNextAction: Route to sales within 24 hours with an account-specific outreach plan.
+        '400':
+          $ref: '#/components/responses/GatewayBadRequest'
+        '401':
+          $ref: '#/components/responses/GatewayUnauthorized'
+        '403':
+          $ref: '#/components/responses/GatewayForbidden'
+        '404':
+          $ref: '#/components/responses/GatewayNotFound'
+        '409':
+          $ref: '#/components/responses/GatewayConflict'
+        '410':
+          $ref: '#/components/responses/GatewayGone'
+        '429':
+          $ref: '#/components/responses/GatewayRateLimited'
+        '502':
+          $ref: '#/components/responses/GatewayUpstreamFailure'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+  /gateway/v1/leads/{id}:
+    delete:
+      tags: [Protected Gateway]
+      summary: Request source-owned lead deletion when explicitly enabled
+      description: >
+        Requires leads:delete and GATEWAY_ALLOW_DELETE=1. Suppresses the lead locally before
+        asking the configured source to delete it. A 204 proves only source acknowledgement;
+        destination and backup erasure require separate verification. A delivery in progress
+        for the same lead in this process returns 409. Suppression and locking are process-local.
+      security:
+        - GatewayBearer: []
+      parameters:
+        - $ref: '#/components/parameters/GatewayLeadId'
+      responses:
+        '204':
+          description: Configured source acknowledged deletion; no response body
+        '400':
+          $ref: '#/components/responses/GatewayBadRequest'
+        '401':
+          $ref: '#/components/responses/GatewayUnauthorized'
+        '403':
+          $ref: '#/components/responses/GatewayForbidden'
+        '404':
+          $ref: '#/components/responses/GatewayNotFound'
+        '409':
+          $ref: '#/components/responses/GatewayConflict'
+        '429':
+          $ref: '#/components/responses/GatewayRateLimited'
+        '502':
+          $ref: '#/components/responses/GatewayUpstreamFailure'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+  /gateway/v1/deliveries:
+    post:
+      tags: [Protected Gateway]
+      summary: Score and deliver a minimal signed event to a configured destination
+      description: >
+        Requires deliveries:write. Checks the lead, account, consent, and deletion state before
+        reserving a process-local idempotency record. No contact name or email is sent.
+        Replays of a completed record return 200 with its recorded state; pending replays return 202.
+      security:
+        - GatewayBearer: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          description: Client key of 8 to 128 ASCII letters, digits, dots, underscores, or hyphens; scoped to client and tenant.
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9._-]{8,128}$'
+          example: demo-score-001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewayDeliveryRequest'
+            example:
+              leadId: lead-001
+      responses:
+        '201':
+          description: Configured destination returned HTTP 2xx for a new delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayDeliveryCreated'
+              example:
+                deliveryId: 123e4567-e89b-42d3-a456-426614174000
+                state: delivered
+                attempts: 1
+        '200':
+          description: Completed idempotent replay; inspect state, which can be delivered or failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayDeliveryStatus'
+        '202':
+          description: Existing idempotent delivery is still pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayDeliveryStatus'
+        '400':
+          $ref: '#/components/responses/GatewayBadRequest'
+        '401':
+          $ref: '#/components/responses/GatewayUnauthorized'
+        '403':
+          $ref: '#/components/responses/GatewayForbidden'
+        '404':
+          $ref: '#/components/responses/GatewayNotFound'
+        '409':
+          $ref: '#/components/responses/GatewayConflict'
+        '410':
+          $ref: '#/components/responses/GatewayGone'
+        '413':
+          $ref: '#/components/responses/GatewayTooLarge'
+        '429':
+          $ref: '#/components/responses/GatewayRateLimited'
+        '502':
+          description: Source failure or delivery failure; delivery failure includes an opaque deliveryId
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - $ref: '#/components/schemas/GatewayDeliveryFailure'
+              examples:
+                destinationRejected:
+                  summary: Destination did not acknowledge the event
+                  value:
+                    error:
+                      code: delivery_failed
+                      message: Delivery was not acknowledged.
+                    deliveryId: 123e4567-e89b-42d3-a456-426614174000
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+  /gateway/v1/deliveries/{id}:
+    get:
+      tags: [Protected Gateway]
+      summary: Inspect one delivery's process-local status
+      description: Requires deliveries:read. A record is visible only to the same tenant and client that created it.
+      security:
+        - GatewayBearer: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Opaque delivery ID.
+          schema:
+            type: string
+          example: 123e4567-e89b-42d3-a456-426614174000
+      responses:
+        '200':
+          description: Current process-local delivery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayDeliveryStatus'
+              example:
+                deliveryId: 123e4567-e89b-42d3-a456-426614174000
+                state: failed
+                attempts: 3
+                code: delivery_failed
+                upstreamStatus: 503
+        '400':
+          $ref: '#/components/responses/GatewayBadRequest'
+        '401':
+          $ref: '#/components/responses/GatewayUnauthorized'
+        '403':
+          $ref: '#/components/responses/GatewayForbidden'
+        '404':
+          $ref: '#/components/responses/GatewayNotFound'
+        '429':
+          $ref: '#/components/responses/GatewayRateLimited'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
 components:
+  securitySchemes:
+    GatewayBearer:
+      type: http
+      scheme: bearer
+      description: >
+        Opaque client token. The server maps its SHA-256 digest to one client, tenant, and
+        scopes. This is not a delegated OAuth token; no upstream token is passed through.
+  parameters:
+    GatewayLeadId:
+      in: path
+      name: id
+      required: true
+      description: Source lead ID within the authenticated client's tenant.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
+      example: lead-001
+  responses:
+    GatewayBadRequest:
+      description: Invalid path, header, or body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayUnauthorized:
+      description: Missing or invalid client bearer token
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          example: Bearer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: unauthorized
+              message: Authentication is required.
+    GatewayForbidden:
+      description: Missing route scope, missing or expired consent, or deletion feature disabled
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayNotFound:
+      description: Lead, linked account, or delivery record not found in the authorized tenant/client
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayConflict:
+      description: Idempotency key used for another lead, or local suppression conflicts with an in-flight delivery
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: delivery_in_progress
+              message: A delivery is in progress for this lead.
+    GatewayGone:
+      description: Lead is deleted or locally suppressed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: lead_deleted
+              message: The lead has been deleted.
+    GatewayTooLarge:
+      description: JSON request body exceeds the configured limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayRateLimited:
+      description: Process-local rate limit exceeded for this client and tenant
+      headers:
+        Retry-After:
+          description: Seconds until this bucket resets.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayUpstreamFailure:
+      description: Configured source is unavailable or returned an invalid record/response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayUnavailable:
+      description: Gateway disabled or process-local store cannot accept more records
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: gateway_disabled
+              message: The protected gateway is not configured.
+    GatewayTimeout:
+      description: Configured source timed out
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
   schemas:
     HealthResponse:
       type: object
@@ -205,9 +603,11 @@ components:
       properties:
         companySize:
           type: integer
+          minimum: 0
           example: 850
         annualRevenue:
           type: integer
+          minimum: 0
           example: 128000000
         engagementScore:
           type: integer
@@ -216,8 +616,10 @@ components:
           example: 91
         intentSignals:
           type: array
+          maxItems: 20
           items:
             type: string
+            enum: [pricing-page, demo-request, webinar-attended, case-study-download, newsletter-click, homepage-return-visit, ad-click]
           example:
             - pricing-page
             - webinar-attended
@@ -238,8 +640,160 @@ components:
             type: string
         recommendedNextAction:
           type: string
-          example: Route to sales within 24 hours with enterprise web platform modernization message.
+          example: Route to sales within 24 hours with an account-specific outreach plan.
       required: [score, tier, explanation, recommendedNextAction]
+    LinkedScoreResponse:
+      type: object
+      properties:
+        leadId:
+          type: string
+          example: lead-001
+        accountId:
+          type: string
+          example: acct-analytics-002
+        modelVersion:
+          type: string
+          example: rules-v1
+        provenance:
+          type: object
+          properties:
+            dataSource:
+              type: string
+              enum: [synthetic-fixture]
+            leadId:
+              type: string
+            accountId:
+              type: string
+          required: [dataSource, leadId, accountId]
+        inputs:
+          $ref: '#/components/schemas/ScoreRequest'
+        breakdown:
+          type: object
+          properties:
+            companySize:
+              type: integer
+              minimum: 0
+              example: 23
+            annualRevenue:
+              type: integer
+              minimum: 0
+              example: 16
+            engagement:
+              type: integer
+              minimum: 0
+              example: 32
+            intentSignals:
+              type: integer
+              minimum: 0
+              example: 18
+          required: [companySize, annualRevenue, engagement, intentSignals]
+        result:
+          $ref: '#/components/schemas/ScoreResponse'
+      required: [leadId, accountId, modelVersion, provenance, inputs, breakdown, result]
+    GatewayScoreResponse:
+      type: object
+      description: Protected read-through score. Source records are not retained in the gateway database.
+      properties:
+        leadId:
+          type: string
+        accountId:
+          type: string
+        modelVersion:
+          type: string
+          example: rules-v1
+        provenance:
+          type: object
+          properties:
+            dataSource:
+              type: string
+              enum: [configured-http-source]
+            tenantId:
+              type: string
+              example: tenant-demo
+            consentRecordedAt:
+              type: string
+              format: date-time
+          required: [dataSource, tenantId, consentRecordedAt]
+        inputs:
+          $ref: '#/components/schemas/ScoreRequest'
+        breakdown:
+          type: object
+          properties:
+            companySize:
+              type: integer
+              minimum: 0
+            annualRevenue:
+              type: integer
+              minimum: 0
+            engagement:
+              type: integer
+              minimum: 0
+            intentSignals:
+              type: integer
+              minimum: 0
+          required: [companySize, annualRevenue, engagement, intentSignals]
+        result:
+          $ref: '#/components/schemas/ScoreResponse'
+      required: [leadId, accountId, modelVersion, provenance, inputs, breakdown, result]
+    GatewayDeliveryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        leadId:
+          type: string
+          pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
+      required: [leadId]
+    GatewayDeliveryCreated:
+      type: object
+      properties:
+        deliveryId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [delivered]
+        attempts:
+          type: integer
+          minimum: 1
+          maximum: 3
+      required: [deliveryId, state, attempts]
+    GatewayDeliveryStatus:
+      type: object
+      properties:
+        deliveryId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [pending, delivered, failed]
+        attempts:
+          type: integer
+          minimum: 0
+        code:
+          type: string
+          nullable: true
+          description: Safe delivery failure code, or null.
+        upstreamStatus:
+          type: integer
+          nullable: true
+          description: Destination HTTP status, or null when none was received.
+      required: [deliveryId, state, attempts, code, upstreamStatus]
+    GatewayDeliveryFailure:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [delivery_failed]
+            message:
+              type: string
+          required: [code, message]
+        deliveryId:
+          type: string
+          format: uuid
+      required: [error, deliveryId]
     ErrorResponse:
       type: object
       properties:

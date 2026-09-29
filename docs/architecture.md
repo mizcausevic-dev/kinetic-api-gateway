@@ -1,59 +1,27 @@
-# Kinetic API Gateway Architecture
+# Kinetic API Gateway architecture
 
-## Service Overview
-Kinetic API Gateway is a compact Express service designed to model a realistic internal-facing backend for SaaS revenue operations. It exposes read-only resource endpoints for accounts, leads, and campaigns, then adds a scoring endpoint that turns firmographic and engagement signals into a sales-prioritization decision.
+## Service boundary
 
-The goal is not to simulate a full CRM. The goal is to demonstrate how a backend engineer or platform leader can package business context, API clarity, and production discipline into a service that feels deployable and decision-oriented.
+The Express service has two distinct surfaces:
 
-## Request Flow
-1. Incoming requests pass through `helmet`, `cors`, `morgan`, and JSON body parsing.
-2. Route handlers map requests to lightweight resource controllers under `src/routes`.
-3. Data-backed endpoints read from in-memory sample datasets in `src/data.js`.
-4. `POST /api/score` calls `src/utils/scoring.js`, which translates company size, revenue, engagement, and intent into a normalized score and operating recommendation.
-5. Unknown routes and application errors are sent through a centralized JSON error handler for consistent responses.
-6. Swagger UI is served at `/docs` using the OpenAPI definition stored in `docs/openapi.yaml`.
+- Public `/api` exposes fictional lead, account, and campaign fixtures, an unauthenticated calculator, and a read-only lead-to-account score. Do not send real records to these routes.
+- Protected `/gateway/v1` is disabled by default. With complete server-side configuration, it reads a versioned HTTP source, checks tenant and scoring consent, computes a score in memory, and can send a minimal signed event to a configured destination. Only local HTTP mocks have been exercised; no live CRM integration is verified.
 
-## Endpoint Map
+`src/app.js` creates the app. Incoming requests pass through `helmet`, a request-ID and safe route-template logger, and a 16 KB JSON parser. Swagger UI is served at `/docs`; `/health` reports process status. Open CORS is mounted only on the public `/api` demo routes. Unknown routes and application errors use one JSON error handler. The log omits raw URLs, query strings, bodies, and credentials.
 
-| Endpoint | Responsibility |
-| --- | --- |
-| `GET /health` | Runtime status and service metadata |
-| `GET /api/leads` | B2B lead listing for funnel review and demo use |
-| `GET /api/leads/:id` | Single lead retrieval with explicit 404 behavior |
-| `GET /api/accounts` | Account context for firmographic and segmentation views |
-| `GET /api/campaigns` | Campaign performance and pipeline contribution snapshot |
-| `POST /api/score` | Revenue lead scoring and next-action recommendation |
-| `GET /docs` | Interactive Swagger UI |
+## Public fixture flow
 
-## Scoring Model Explanation
-The scoring model is intentionally simple and explainable:
+`src/data.js` holds three accounts, five leads, and four fictional campaigns. `GET /api/leads/:id/score` follows the lead's `accountId`, maps account employees and revenue plus lead engagement and intent signals into `src/utils/scoring.js`, and returns source IDs, inputs, component scores, `rules-v1`, and the result without a contact name or email. `lead-001` resolves `acct-analytics-002` and scores 89/high-intent. Missing leads or accounts return 404. `POST /api/score` scores caller-supplied inputs independently and stores nothing.
 
-- `companySize` rewards enterprise and upper mid-market fit
-- `annualRevenue` acts as a proxy for likely budget maturity
-- `engagementScore` converts behavioral intensity into a weighted signal
-- `intentSignals` apply direct weights to commercial actions such as pricing-page visits and demo requests
+## Protected integration flow
 
-The final score is capped at 100 and mapped to four operating tiers:
+1. `GATEWAY_ENABLED=1` plus complete configuration mounts `/gateway/v1`; otherwise the prefix returns `503 gateway_disabled`. The client bearer token is hashed and matched against server-configured client IDs, tenant IDs, and scopes. The caller cannot choose a tenant through a request header or body.
+2. A per-client, per-tenant process-local limiter runs after authentication. Routes require `scores:read`, `deliveries:write`, `deliveries:read`, or `leads:delete` as appropriate.
+3. The HTTP source adapter uses a gateway-owned credential and fixed versioned tenant paths to read a lead and linked account. It bounds response size and time and retries GET once for transport errors, `429`, or 5xx. It does not forward the client's token.
+4. Before scoring, the router checks source IDs and tenant matches, `deletedAt: null`, current `sales-prioritization` consent, and supported numeric and intent inputs. The result contains no name or email.
+5. `POST /gateway/v1/deliveries` reserves a process-local idempotency record, sends a minimal score event with HMAC-SHA256 headers, and records delivery acknowledgement or failure. `GET /gateway/v1/deliveries/:id` is visible only to the creating client and tenant. A 2xx from the configured destination proves only HTTP acceptance.
+6. Optional `DELETE /gateway/v1/leads/:id` requires `GATEWAY_ALLOW_DELETE=1` and `leads:delete`. It returns 409 while a delivery for that lead is in flight in the same process. Otherwise it suppresses new local requests and calls source-owned DELETE once. Suppression, delivery state, rate limits, idempotency, and the delivery/deletion lock are in memory; they do not survive restart or coordinate replicas.
 
-- `0-39`: cold
-- `40-69`: warm
-- `70-84`: qualified
-- `85-100`: high-intent
+## Operational limits
 
-This approach is useful when teams need a transparent routing model they can explain to sales, marketing, RevOps, and leadership without requiring a machine learning pipeline.
-
-## Security Notes
-
-- `helmet` sets baseline HTTP security headers
-- `cors` keeps cross-origin behavior explicit and easy to harden later
-- `express.json()` ensures the API can safely accept structured payloads
-- centralized error handling avoids leaking stack traces in response bodies
-- Swagger UI is generated from a static spec, which keeps API documentation deterministic
-
-## Future Production Upgrades
-
-- add request schema validation with a library such as `zod` or `joi`
-- move in-memory data to PostgreSQL and introduce repository or service abstractions
-- add rate limiting, authn/authz, and audit trails for internal or partner integrations
-- emit structured logs and metrics to an observability platform
-- add async event publishing for CRM sync, nurture orchestration, and analytics enrichment
+This is a reference implementation for synthetic tests. Real-data use needs a named provider and destination, approved data purpose and retention, least-privilege credentials, deployed boundary verification, shared durable rate/idempotency/deletion state, cancellation or reconciliation of in-flight delivery, and tested downstream deletion and rollback. The [integration contract](./integration-contract.md) defines HTTP behavior; the [privacy lifecycle](./privacy-lifecycle.md) lists the real-data gates. The [OpenAPI file](./openapi.yaml) is the client-facing contract and [diagrams](../architecture-diagrams.md) show the request flow.
